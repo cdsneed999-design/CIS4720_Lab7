@@ -122,87 +122,118 @@ SHOW FULL TABLES;
 
 -- STEP 10. Section 5.1, look at your schema
 
+-- This shows which database I am currently using.
+SELECT DATABASE() AS my_schema;
 
--- STEP 11. Section 5.2, look at the data types
-
-
--- STEP 12. Section 5.3, create a table by copying with a subquery
-
-
--- STEP 13. Section 5.4, change the structure of the copy
-
-
--- STEP 14. Section 5.5, insert, update and delete a row
-
-
--- STEP 15. Section 5.6, create a view and update through it
-
-
-
--- STEP 10. Section 5.1, look at your schema
--- This shows the tables and views in my database.
+-- This lists the tables and views in my database.
 SHOW FULL TABLES FROM cis4720_Sneed;
 
 
 -- STEP 11. Section 5.2, look at the data types
--- This shows the columns and data types used in my PRODUCT table.
+
+-- This shows the columns and data types in the PRODUCT table.
 DESCRIBE cis4720_Sneed.PRODUCT;
 
 
 -- STEP 12. Section 5.3, create a table by copying with a subquery
--- This creates a new table using the data from my original PRODUCT table.
-CREATE TABLE cis4720_Sneed.PRODUCT_COPY AS
-SELECT * FROM cis4720_Sneed.PRODUCT;
 
--- This checks that the new table contains all four products.
+-- This copies the product ID, name, and price into a new table.
+CREATE TABLE cis4720_Sneed.PRODUCT_COPY AS
+SELECT prod_id, prod_name, unit_price
+FROM cis4720_Sneed.PRODUCT;
+
+-- This displays the four products in the copied table.
 SELECT * FROM cis4720_Sneed.PRODUCT_COPY;
+
+-- This shows how MySQL created the table and whether it has constraints.
+SHOW CREATE TABLE cis4720_Sneed.PRODUCT_COPY;
 
 
 -- STEP 13. Section 5.4, change the structure of the copy
--- This adds a supplier column to my copied table without changing the original.
-ALTER TABLE cis4720_Sneed.PRODUCT_COPY
-ADD COLUMN supplier VARCHAR(40);
 
--- This shows the new column and its data type.
+-- This adds a temporary column to the copied table.
+ALTER TABLE cis4720_Sneed.PRODUCT_COPY
+ADD COLUMN on_sale CHAR(1);
+
+-- This allows longer product names while still requiring a name.
+ALTER TABLE cis4720_Sneed.PRODUCT_COPY
+MODIFY COLUMN prod_name VARCHAR(60) NOT NULL;
+
+-- This prevents duplicate product IDs.
+ALTER TABLE cis4720_Sneed.PRODUCT_COPY
+ADD PRIMARY KEY (prod_id);
+
+-- This displays the updated column definitions and primary key.
 DESCRIBE cis4720_Sneed.PRODUCT_COPY;
+
+-- This tests whether a duplicate product ID is rejected.
+-- Expected error: 1062. Uncomment only when testing.
+-- INSERT INTO cis4720_Sneed.PRODUCT_COPY
+-- VALUES (1, 'Duplicate', 9.99, NULL);
+
+-- This removes the temporary column.
+ALTER TABLE cis4720_Sneed.PRODUCT_COPY
+DROP COLUMN on_sale;
 
 
 -- STEP 14. Section 5.5, insert, update and delete a row
 
--- This adds a new coffee product to my copied table.
+-- This adds a new coffee product to the copied table.
 INSERT INTO cis4720_Sneed.PRODUCT_COPY
-(prod_id, prod_name, unit_price, added_on, roast_level, supplier)
-VALUES (5, 'Kenya AA', 19.75, '2026-10-19', 'Medium', 'Coffee Supplier');
+(prod_id, prod_name, unit_price)
+VALUES (5, 'Kenya Peaberry', 21.40);
 
--- This changes the price of the new coffee product.
+-- This confirms that the new product was added.
+SELECT * FROM cis4720_Sneed.PRODUCT_COPY WHERE prod_id = 5;
+
+-- This changes the new product's price.
 UPDATE cis4720_Sneed.PRODUCT_COPY
-SET unit_price = 20.50
+SET unit_price = 22.95
 WHERE prod_id = 5;
 
--- This removes the new coffee product from my copied table.
+-- This checks that the new price was saved.
+SELECT * FROM cis4720_Sneed.PRODUCT_COPY WHERE prod_id = 5;
+
+-- This removes the new product.
 DELETE FROM cis4720_Sneed.PRODUCT_COPY
 WHERE prod_id = 5;
 
--- This checks that my copied table still has the original four products.
-SELECT * FROM cis4720_Sneed.PRODUCT_COPY;
+-- This counts the products remaining after the deletion.
+SELECT COUNT(*) AS rows_left
+FROM cis4720_Sneed.PRODUCT_COPY;
 
 
 -- STEP 15. Section 5.6, create a view and update through it
 
--- This creates a view that shows the product ID, name, and price.
-CREATE VIEW cis4720_Sneed.PRODUCT_COPY_PRICES AS
+-- This creates a view of products priced below sixteen dollars.
+CREATE VIEW cis4720_Sneed.CHEAP_PRODUCTS AS
 SELECT prod_id, prod_name, unit_price
+FROM cis4720_Sneed.PRODUCT_COPY
+WHERE unit_price < 16.00;
+
+-- This displays the products in the view.
+SELECT * FROM cis4720_Sneed.CHEAP_PRODUCTS;
+
+-- This checks the price before updating through the view.
+SELECT prod_id, unit_price
+FROM cis4720_Sneed.PRODUCT_COPY
+WHERE prod_id = 3;
+
+-- This changes a product price through the view.
+UPDATE cis4720_Sneed.CHEAP_PRODUCTS
+SET unit_price = 13.99
+WHERE prod_id = 3;
+
+-- This confirms that the copied table received the price change.
+SELECT prod_id, unit_price
+FROM cis4720_Sneed.PRODUCT_COPY
+WHERE prod_id = 3;
+
+-- This creates a summary view using aggregate functions.
+CREATE VIEW cis4720_Sneed.PRICE_SUMMARY AS
+SELECT COUNT(*) AS n, SUM(unit_price) AS total
 FROM cis4720_Sneed.PRODUCT_COPY;
 
--- This shows the products in my new view.
-SELECT * FROM cis4720_Sneed.PRODUCT_COPY_PRICES;
-
--- This updates a product price through the view instead of the table.
-UPDATE cis4720_Sneed.PRODUCT_COPY_PRICES
-SET unit_price = 19.00
-WHERE prod_id = 1;
-
--- This checks that the price changed in the original copied table.
-SELECT * FROM cis4720_Sneed.PRODUCT_COPY
-WHERE prod_id = 1;
-
+-- This attempts to update the summary view.
+-- Expected error: 1288, because aggregate views are not updatable.
+-- UPDATE cis4720_Sneed.PRICE_SUMMARY SET total = 99;
