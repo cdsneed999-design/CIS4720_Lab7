@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    lab6_backup.sql
    CIS 4720 Database Management and SQL
 
@@ -53,6 +53,7 @@ USE cis4720_Sneed;
 -- PRIMARY KEY means prod_id must be unique and may never be empty.
 -- ======================================================================
 
+/*
 CREATE TABLE PRODUCT (
     prod_id     INT          NOT NULL,
     prod_name   VARCHAR(40)  NOT NULL,
@@ -89,6 +90,8 @@ FROM PRODUCT;
 
 
 -- ======================================================================
+
+*/
 -- SECTION 5. Checks
 -- These only read. They are safe to run as many times as you like, so leave
 -- them uncommented even after the first run.
@@ -133,4 +136,73 @@ SHOW FULL TABLES;
 
 
 -- STEP 15. Section 5.6, create a view and update through it
+
+
+
+-- STEP 10. Section 5.1, look at your schema
+-- This shows the tables and views in my database.
+SHOW FULL TABLES FROM cis4720_Sneed;
+
+
+-- STEP 11. Section 5.2, look at the data types
+-- This shows the columns and data types used in my PRODUCT table.
+DESCRIBE cis4720_Sneed.PRODUCT;
+
+
+-- STEP 12. Section 5.3, create a table by copying with a subquery
+-- This creates a new table using the data from my original PRODUCT table.
+CREATE TABLE cis4720_Sneed.PRODUCT_COPY AS
+SELECT * FROM cis4720_Sneed.PRODUCT;
+
+-- This checks that the new table contains all four products.
+SELECT * FROM cis4720_Sneed.PRODUCT_COPY;
+
+
+-- STEP 13. Section 5.4, change the structure of the copy
+-- This adds a supplier column to my copied table without changing the original.
+ALTER TABLE cis4720_Sneed.PRODUCT_COPY
+ADD COLUMN supplier VARCHAR(40);
+
+-- This shows the new column and its data type.
+DESCRIBE cis4720_Sneed.PRODUCT_COPY;
+
+
+-- STEP 14. Section 5.5, insert, update and delete a row
+
+-- This adds a new coffee product to my copied table.
+INSERT INTO cis4720_Sneed.PRODUCT_COPY
+(prod_id, prod_name, unit_price, added_on, roast_level, supplier)
+VALUES (5, 'Kenya AA', 19.75, '2026-10-19', 'Medium', 'Coffee Supplier');
+
+-- This changes the price of the new coffee product.
+UPDATE cis4720_Sneed.PRODUCT_COPY
+SET unit_price = 20.50
+WHERE prod_id = 5;
+
+-- This removes the new coffee product from my copied table.
+DELETE FROM cis4720_Sneed.PRODUCT_COPY
+WHERE prod_id = 5;
+
+-- This checks that my copied table still has the original four products.
+SELECT * FROM cis4720_Sneed.PRODUCT_COPY;
+
+
+-- STEP 15. Section 5.6, create a view and update through it
+
+-- This creates a view that shows the product ID, name, and price.
+CREATE VIEW cis4720_Sneed.PRODUCT_COPY_PRICES AS
+SELECT prod_id, prod_name, unit_price
+FROM cis4720_Sneed.PRODUCT_COPY;
+
+-- This shows the products in my new view.
+SELECT * FROM cis4720_Sneed.PRODUCT_COPY_PRICES;
+
+-- This updates a product price through the view instead of the table.
+UPDATE cis4720_Sneed.PRODUCT_COPY_PRICES
+SET unit_price = 19.00
+WHERE prod_id = 1;
+
+-- This checks that the price changed in the original copied table.
+SELECT * FROM cis4720_Sneed.PRODUCT_COPY
+WHERE prod_id = 1;
 
